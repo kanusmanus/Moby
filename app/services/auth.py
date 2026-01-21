@@ -113,12 +113,16 @@ async def create_user(db: AsyncSession, payload: RegisterIn):
     return user
 
 
-async def update_user(db: AsyncSession, payload: UserUpdateIn, current_user: User):
-    existing = await db.execute(select(User).where(User.email == payload.email))
-
+async def update_user(db: AsyncSession, user_id: int, payload: UserUpdateIn):
+    existing = await db.execute(select(User).where(User.id == user_id))
     user = existing.scalar_one_or_none()
+
     if user is None:
-        return UserNotFound()
+        raise UserNotFound()
+    
+    user.email = payload.email
+    user.name = payload.name
+    user.phone = payload.phone
 
     await db.commit()
     await db.refresh(user)
@@ -127,13 +131,14 @@ async def update_user(db: AsyncSession, payload: UserUpdateIn, current_user: Use
 
 async def delete_user(db: AsyncSession, user_id: int):
     existing = await db.execute(select(User).where(User.id == user_id))
-
     user = existing.scalar_one_or_none()
+
     if user is None:
-        return UserNotFound()
+        raise UserNotFound()
 
     await db.delete(user)
     await db.commit()
+    return user
 
 
 async def create_admin(db: AsyncSession, payload: RegisterIn):
