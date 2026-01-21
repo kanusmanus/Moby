@@ -1,0 +1,69 @@
+# --- Python ---
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pdb
+*.so
+*.egg-info/
+*.log
+*.sqlite3
+
+# --- Virtual environments ---
+.venv/
+venv/
+ENV/
+env/
+*.env.backup
+.env
+
+# --- Editor & OS files ---
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+# --- Test / coverage ---
+.coverage
+htmlcov/
+.cache/
+.pytest_cache/
+.mypy_cache/
+.toxcode labs/
+*.prof
+
+# --- Local config ---
+.env
+.env.local
+.env.docker
+
+# --- Build artifacts ---
+dist/
+build/
+*.egg
+*.whl
+
+# --- Docker ---
+*.pid
+logs/
+tmp/
+docker-compose.override.yml
+# named volumes stay managed by docker, not git
+db_data/
+redis_data/
+
+# --- Alembic ---
+# Keep migrations/versions but ignore pycache or temp
+migrations/__pycache__/*
+migrations/*.pyc
+
+# --- Frontend (if you add React/Vite later) ---
+node_modules/
+dist/
+build/
+
+# --- Misc ---
+*.bak
+*.old
