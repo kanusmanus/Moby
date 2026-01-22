@@ -6,7 +6,7 @@ class Settings(BaseModel):
     app_name: str = os.getenv("APP_NAME", "Parking API")
     env: str = os.getenv("APP_ENV", "dev")
     host: str = os.getenv("APP_HOST", "0.0.0.0")
-    port: int = int(os.getenv("APP_PORT", 8000))
+    port: int = int(os.getenv("APP_PORT") or 8000)
 
     jwt_secret: str = os.getenv("JWT_SECRET", "changeme")
     jwt_alg: str = os.getenv("JWT_ALG", "HS256")

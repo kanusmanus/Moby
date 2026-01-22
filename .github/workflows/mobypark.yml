@@ -7,7 +7,7 @@ jobs:
       name: testing
     strategy:
       matrix:
-        python-version: ["3.13"]
+        python-version: ["3.11"]
     env:
       POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
       POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
@@ -31,4 +31,3 @@ jobs:
       - name: Run tests
         run: |
           pytest
-          
