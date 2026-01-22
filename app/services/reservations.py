@@ -160,3 +160,21 @@ async def try_get_valid_reservation_by_plate(
     )
     return result.scalar_one_or_none()
 
+
+async def delete_reservation(
+    db: AsyncSession, reservation_id: int, current_user: User
+) -> None:
+    """Delete a reservation by ID."""
+    reservation = await db.get(Reservation, reservation_id)
+
+    if not reservation:
+        raise ReservationNotFound()
+
+    # Check authorization (user can only delete their own unless admin)
+    if current_user.role != "admin" and reservation.user_id != current_user.id:
+        from fastapi import HTTPException
+
+        raise HTTPException(status_code=403, detail="Not authorized")
+
+    await db.delete(reservation)
+    await db.commit()
