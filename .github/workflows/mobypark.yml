@@ -2,12 +2,12 @@ name: MobyPark
 on: [push, pull_request]
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     environment:
       name: testing
     strategy:
       matrix:
-        python-version: ["3.11"]
+        python-version: ["3.13"]
     env:
       POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
       POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
@@ -55,7 +55,6 @@ jobs:
           DATABASE_PASSWORD=${{ secrets.POSTGRES_PASSWORD }}
           DATABASE_URL=postgresql+psycopg://${{ secrets.POSTGRES_USER }}:${{ secrets.POSTGRES_PASSWORD }}@db:5432/${{ secrets.POSTGRES_DB }}
           DATABASE_URL_TEST=postgresql+psycopg://${{ secrets.POSTGRES_USER }}:${{ secrets.POSTGRES_PASSWORD }}@db:5432/${{ secrets.POSTGRES_TEST_DB }}
-          SYNC_DATABASE_URL=postgresql+psycopg://${{ secrets.POSTGRES_USER }}:${{ secrets.POSTGRES_PASSWORD }}@db:5432/${{ secrets.POSTGRES_DB }}
           pid=
           exists=
           EOF
@@ -91,14 +90,10 @@ jobs:
       - name: Test with pytest
         run: |
           pip install pytest pytest-cov
-          pytest --doctest-modules --junitxml=junit/test-results.xml --cov=app --cov-report=xml --cov-report=html
-      - name: Upload coverage reports
-        uses: codecov/codecov-action@v3
-        with:
-          files: ./coverage.xml
-          fail_ci_if_error: false
+          pytest --doctest-modules --junitxml=junit/test-results.xml --cov=com --cov-report=xml --cov-report=html
       - name: Cleanup Docker (always)
         if: always()
         run: |
           docker compose down -v --remove-orphans || true
           docker system prune -af --volumes || true
+

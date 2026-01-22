@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from sqlalchemy.orm import Session
 
-from app.models.reservation import Reservation, ReservationStatus, ReservationChannel
+from app.models.reservation import Reservation, ReservationStatus
 from app.scripts.import_common import (
     ImportContext,
     load_json,
@@ -22,10 +22,6 @@ def _parse_status(value) -> ReservationStatus:
         return ReservationStatus.confirmed
     if s in ("cancelled", "canceled", "cancel"):
         return ReservationStatus.cancelled
-    if s in ("expired",):
-        return ReservationStatus.expired
-    if s in ("completed",):
-        return ReservationStatus.completed
     return ReservationStatus.confirmed
 
 
@@ -36,10 +32,9 @@ def import_reservations(
     Expected JSON item keys (flexible):
     - id / reservation_id
     - user_id (old), vehicle_id (old), parking_lot_id (old)
-    - start_time / planned_start, end_time / planned_end (iso string or timestamp)
+    - start_time, end_time (iso string or timestamp)
     - status
-    - cost / quoted_cost / original_cost
-    - license_plate
+    - cost
     """
     items = load_json(filename)
 
@@ -57,29 +52,19 @@ def import_reservations(
         if old_lot_id not in ctx.lot_id_map:
             raise ValueError(f"Reservation parking_lot_id not mapped. item={item}")
 
-        planned_start = parse_dt(pick(item, "planned_start", "start_time", "startTime", "start"))
-        planned_end = parse_dt(pick(item, "planned_end", "end_time", "endTime", "end"))
-        
-        if not planned_start or not planned_end:
+        start_time = parse_dt(pick(item, "start_time", "startTime", "start"))
+        end_time = parse_dt(pick(item, "end_time", "endTime", "end"))
+        if not start_time or not end_time:
             raise ValueError(f"Reservation missing start/end time: {item}")
-
-        license_plate = pick(item, "license_plate", "licensePlate", "plate", default="UNKNOWN")
-        original_cost = float(pick(item, "original_cost", "cost", "price", default=0.0) or 0.0)
-        quoted_cost = float(pick(item, "quoted_cost", "cost", "price", default=0.0) or 0.0)
-        discount_amount = float(pick(item, "discount_amount", default=0.0) or 0.0)
 
         reservation = Reservation(
             user_id=ctx.user_id_map[old_user_id],
             vehicle_id=ctx.vehicle_id_map[old_vehicle_id],
             parking_lot_id=ctx.lot_id_map[old_lot_id],
-            license_plate=license_plate,
-            planned_start=planned_start,
-            planned_end=planned_end,
+            start_time=start_time,
+            end_time=end_time,
             status=_parse_status(pick(item, "status")),
-            channel=ReservationChannel.registered,
-            quoted_cost=quoted_cost,
-            original_cost=original_cost,
-            discount_amount=discount_amount,
+            cost=float(pick(item, "cost", "price", default=0.0) or 0.0),
         )
         db.add(reservation)
         db.flush()

@@ -38,45 +38,12 @@ async def login(payload: LoginIn, db: AsyncSession = Depends(get_session)):
     return await login_account(db, payload)
 
 
-@router.get("/users/me", response_model=UserOut, status_code=status.HTTP_200_OK)
-async def get_me(
-    db: AsyncSession = Depends(get_session),
-    current_user: User = Depends(get_current_user),
-):
-    """Get the current authenticated user's profile."""
-    user = await get_user(db, current_user.id)
-    return UserOut.model_validate(user)
-
-
-@router.put("/users/me", response_model=UserOut, status_code=status.HTTP_200_OK)
-async def update_me(
-    payload: UserUpdateIn,
-    db: AsyncSession = Depends(get_session),
-    current_user: User = Depends(get_current_user),
-):
-    """Update the current authenticated user's profile."""
-    user = await update_user(db, current_user.id, payload)  # FIX: user_id toegevoegd
-    return UserOut.model_validate(user)
-
-
-@router.delete("/users/me", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_me(
-    db: AsyncSession = Depends(get_session),
-    current_user: User = Depends(get_current_user),
-):
-    """Delete the current authenticated user's account."""
-    await delete_user(db, current_user.id)
-
-
-# Admin routes voor andere users - NA de /me routes
-
 @router.get("/users/{user_id}", response_model=UserOut, status_code=status.HTTP_200_OK)
 async def user(
     user_id: int,
     db: AsyncSession = Depends(get_session),
     current_user: User = Depends(require_roles("admin")),
 ):
-    """Get a user by ID (admin only)."""
     user = await get_user(db, user_id)
     return UserOut.model_validate(user)
 
@@ -88,8 +55,7 @@ async def update_other_user(
     db: AsyncSession = Depends(get_session),
     current_user: User = Depends(require_roles("admin")),
 ):
-    """Update a user by ID (admin only)."""
-    user = await update_user(db, user_id, payload)  # FIX: user_id wordt nu doorgegeven!
+    user = await update_user(db, payload, current_user)
     return UserOut.model_validate(user)
 
 
@@ -101,9 +67,39 @@ async def delete_other_user(
     db: AsyncSession = Depends(get_session),
     current_user: User = Depends(require_roles("admin")),
 ):
-    """Delete a user by ID (admin only)."""
     user = await delete_user(db, user_id)
     return UserOut.model_validate(user)
+
+
+@router.get("/users/me", response_model=UserOut, status_code=status.HTTP_200_OK)
+async def get_me(
+    db: AsyncSession = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+):
+    user = await get_user(db, current_user.id)
+    return UserOut.model_validate(user)
+
+
+@router.put("/users/me", response_model=UserOut, status_code=status.HTTP_200_OK)
+async def update_me(
+    payload: UserUpdateIn,
+    db: AsyncSession = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+):
+    user = await update_user(
+        db,
+        payload,
+        current_user,
+    )
+    return UserOut.model_validate(user)
+
+
+@router.delete("/users/me", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_me(
+    db: AsyncSession = Depends(get_session),
+    current_user: User = Depends(get_current_user),
+):
+    await delete_user(db, current_user.id)
 
 
 @router.post(
@@ -116,6 +112,5 @@ async def register_admin(
     db: AsyncSession = Depends(get_session),
     current_user: User = Depends(require_roles("admin")),
 ):
-    """Register a new admin user (admin only)."""
     admin = await create_admin(db, payload)
     return RegisterOut(id=admin.id, email=admin.email, name=admin.name)
